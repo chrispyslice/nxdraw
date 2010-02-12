@@ -24,7 +24,9 @@ public class NXDraw extends JFrame
     private final String WINDOW_TITLE = "Nexus Drawer";                     // Window title
     
     // Preferences
-    private final boolean DEBUG = false;                                     // Do we want to display debugging info?
+    private final boolean DEBUG = false;                                    // Do we want to display debugging info?
+    private final int COARSE_LINES_WIDTH = 50;                              // Coarse line width
+    private final int FINE_LINE_WIDTH = 10;                                 // Fine line width
     
     // Freehand drawing
     int freehandThickness = 1;                                              // Get the value of the thickness slider
@@ -62,11 +64,11 @@ public class NXDraw extends JFrame
             if( fineCheckBox.isSelected() )
             {
                 gfx.setColor(new Color(0.8F, 0.8F, 0.8F));
-                for(int i = 0; i < canvasHeight; i =i + 10)
+                for(int i = 0; i < canvasHeight; i += FINE_LINE_WIDTH)
                 {
                     gfx.drawLine(0,i, canvasWidth, i);
                 }
-                for(int i = 0; i < canvasWidth; i =i + 10)
+                for(int i = 0; i < canvasWidth; i += FINE_LINE_WIDTH)
                 {
                     gfx.drawLine(i, 0, i, canvasHeight);
                 }
@@ -76,11 +78,12 @@ public class NXDraw extends JFrame
             if( coarseCheckBox.isSelected() )
             {
                gfx.setColor(new Color(0.6F, 0.6F, 0.6F));
-               for(int i = 0; i < canvasHeight; i =i + 50)
+               for(int i = 0; i < canvasHeight; i += COARSE_LINES_WIDTH)
                {
                    gfx.drawLine(0,i, canvasWidth, i);
                 } 
-                for(int i = 0; i < canvasWidth; i =i + 50)
+
+                for(int i = 0; i < canvasWidth; i += COARSE_LINES_WIDTH)
                 {
                     gfx.drawLine(i, 0, i, canvasHeight);
                 } 
@@ -93,7 +96,6 @@ public class NXDraw extends JFrame
                 int width_height = fxy[i][2];
                 int offsetX = fxy[i][0] - (width_height / 2);
                 int offsetY = fxy[i][1] - (width_height / 2);
-                //gfx.fillOval(fxy[i][0], fxy[i][1], fxy[i][2], fxy[i][2]);
                 gfx.fillOval(offsetX, offsetY, width_height, width_height);
             }
         }
