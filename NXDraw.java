@@ -16,12 +16,21 @@ import java.io.*;
 
 public class NXDraw extends JFrame
 {
-    static int CANVAS_HEIGHT = 800;
-    static int CANVAS_WIDTH = 640;
-    static int CP_WIDTH = 200;
-    static int MA_HEIGHT = 100;
-    static String WINDOW_TITLE = "Nexus Drawer";
+    // Window
+    private final int CANVAS_HEIGHT = 800;
+    private final int CANVAS_WIDTH = 640;
+    private final int CP_WIDTH = 200;
+    private final int MA_HEIGHT = 100;
+    private final String WINDOW_TITLE = "Nexus Drawer";
     
+    // Freehand drawing
+    int freehandThickness = 1;                                              // Get the value of the thickness slider
+    private int freehandPixelsCount = 0;                                    // Make sure we don't go over the limit of the below arrays
+    private final int MAX_FREEHAND_PIXELS = 100000;                           // Max. no of freehand squares
+    private Color[] freehandColour = new Color[MAX_FREEHAND_PIXELS];        // Hold colour of each square
+    private int[][] fxy = new int[MAX_FREEHAND_PIXELS][3];                  // Position and size of each square
+    
+    // Instance declarations
     private Canvas canvas;
     private Cursor canvasCursor;
     private JPanel controlPanel;
@@ -45,7 +54,7 @@ public class NXDraw extends JFrame
             int canvasWidth = getWidth();
 
             // Small lines
-            if( fineCheckBox.isSelected())
+            if( fineCheckBox.isSelected() )
             {
                 gfx.setColor(new Color(0.8F, 0.8F, 0.8F));
                 for(int i = 0; i < canvasHeight; i =i + 10)
@@ -57,7 +66,8 @@ public class NXDraw extends JFrame
                     gfx.drawLine(i, 0, i, canvasHeight);
                 }
             }
-                        
+            
+            // Thick lines
             if( coarseCheckBox.isSelected() )
             {
                gfx.setColor(new Color(0.6F, 0.6F, 0.6F));
@@ -70,11 +80,19 @@ public class NXDraw extends JFrame
                     gfx.drawLine(i, 0, i, canvasHeight);
                 } 
             }
+            
+            // Freehand, for every pixel...
+            for ( int i = 0; i < freehandPixelsCount; i++ )
+            {
+                gfx.setColor(freehandColour[i]);
+                gfx.fillRect(fxy[i][0], fxy[i][1], fxy[i][2], fxy[i][2]);
+            }
         }
     }
     
     // --------------------------------------------------------
     
+    // For the (x, y) labels and freehand drawing
     class CanvasMouseMotionListener implements MouseMotionListener
     {
         public void mouseMoved(MouseEvent evt)
@@ -86,7 +104,74 @@ public class NXDraw extends JFrame
         
         public void mouseDragged(MouseEvent evt)
         {
+            float randRed = (float) Math.random();
+            float randBlue = (float) Math.random();
+            float randGreen = (float) Math.random();
+            
+            freehandColour[freehandPixelsCount] = new Color(randRed, randGreen, randBlue);
+            fxy[freehandPixelsCount][0] = evt.getX();
+            fxy[freehandPixelsCount][1] = evt.getY();
+            fxy[freehandPixelsCount][2] = freehandThickness;
+            freehandPixelsCount++;
+            
+            mouseMoved(evt);
+            canvas.repaint();
+        }
+    }
+    
+    // --------------------------------------------------------
+    
+    // for the freehand drawing
+    class CanvasMouseListener implements MouseListener
+    {
+        public void mousePressed(MouseEvent evt)
+        {
             ;
+        }
+        
+        public void mouseReleased(MouseEvent evt)
+        {
+            ;
+        }
+        
+        public void mouseClicked(MouseEvent evt)
+        {
+            // Generate some random numbers until we implement the colour selector
+            float randRed = (float) Math.random();
+            float randBlue = (float) Math.random();
+            float randGreen = (float) Math.random();
+            
+            // Put the appropriate data into the arrays
+            freehandColour[freehandPixelsCount] = new Color(randRed, randGreen, randBlue);
+            fxy[freehandPixelsCount][0] = evt.getX();
+            fxy[freehandPixelsCount][1] = evt.getY();
+            fxy[freehandPixelsCount][2] = freehandThickness;
+            freehandPixelsCount++;
+            
+            // Repaint the canva
+            canvas.repaint();
+        }
+        
+        public void mouseEntered(MouseEvent evt)
+        {
+            ;
+        }
+        
+        public void mouseExited(MouseEvent evt)
+        {
+            ;
+        }
+    }
+    
+    // --------------------------------------------------------
+    
+    // For the colour changer
+    class FreehandSliderListener implements ChangeListener
+    {
+        public void stateChanged(ChangeEvent evt)
+        {
+            freehandThickness = freehandSizeSlider.getValue();
+            //System.out.println(freehandSizeSlider.getValue());
         }
     }
     
@@ -114,6 +199,7 @@ public class NXDraw extends JFrame
         canvas.setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
         canvas.setCursor(canvasCursor);
         canvas.addMouseMotionListener(new CanvasMouseMotionListener());
+        canvas.addMouseListener(new CanvasMouseListener());
         add(canvas, BorderLayout.CENTER);
         
         // Menu Bar
@@ -185,6 +271,7 @@ public class NXDraw extends JFrame
         freehandSizeSlider.setMinorTickSpacing(1);
         freehandSizeSlider.setPaintTicks(true);
         freehandSizeSlider.setPaintLabels(true);
+        freehandSizeSlider.addChangeListener(new FreehandSliderListener());
         freehandSliderPanel.add(freehandSizeSlider);
         controlPanel.add(freehandSliderPanel);
 
@@ -233,12 +320,11 @@ public class NXDraw extends JFrame
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setVisible(true);
-       
     }
     
     // --------------------------------------------------------
     
-    public static void main()
+    public static void main(String args[])
     {
         NXDraw window = new NXDraw();
     }
