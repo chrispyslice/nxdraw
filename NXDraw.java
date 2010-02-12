@@ -17,18 +17,23 @@ import java.io.*;
 public class NXDraw extends JFrame
 {
     // Window
-    private final int CANVAS_HEIGHT = 800;
-    private final int CANVAS_WIDTH = 640;
-    private final int CP_WIDTH = 200;
-    private final int MA_HEIGHT = 100;
-    private final String WINDOW_TITLE = "Nexus Drawer";
+    private final int CANVAS_HEIGHT = 800;                                  // Canvas height
+    private final int CANVAS_WIDTH = 640;                                   // Canvas width
+    private final int CP_WIDTH = 200;                                       // Control panel width
+    private final int MA_HEIGHT = 100;                                      // Message area height
+    private final String WINDOW_TITLE = "Nexus Drawer";                     // Window title
+    
+    // Preferences
+    private final boolean DEBUG = false;                                     // Do we want to display debugging info?
     
     // Freehand drawing
     int freehandThickness = 1;                                              // Get the value of the thickness slider
     private int freehandPixelsCount = 0;                                    // Make sure we don't go over the limit of the below arrays
-    private final int MAX_FREEHAND_PIXELS = 100000;                           // Max. no of freehand squares
+    private final int MAX_FREEHAND_PIXELS = 10;                         // Max. no of freehand squares
     private Color[] freehandColour = new Color[MAX_FREEHAND_PIXELS];        // Hold colour of each square
     private int[][] fxy = new int[MAX_FREEHAND_PIXELS][3];                  // Position and size of each square
+    private Color selectedColour = new Color(0.0f, 0.0f, 0.0f);             // Initial colour. Currently black
+    private int freehandPixelsLeft = MAX_FREEHAND_PIXELS;                   // How many freehand drawings can we still do?
     
     // Instance declarations
     private Canvas canvas;
@@ -85,7 +90,11 @@ public class NXDraw extends JFrame
             for ( int i = 0; i < freehandPixelsCount; i++ )
             {
                 gfx.setColor(freehandColour[i]);
-                gfx.fillRect(fxy[i][0], fxy[i][1], fxy[i][2], fxy[i][2]);
+                int width_height = fxy[i][2];
+                int offsetX = fxy[i][0] - (width_height / 2);
+                int offsetY = fxy[i][1] - (width_height / 2);
+                //gfx.fillOval(fxy[i][0], fxy[i][1], fxy[i][2], fxy[i][2]);
+                gfx.fillOval(offsetX, offsetY, width_height, width_height);
             }
         }
     }
@@ -104,17 +113,16 @@ public class NXDraw extends JFrame
         
         public void mouseDragged(MouseEvent evt)
         {
-            float randRed = (float) Math.random();
-            float randBlue = (float) Math.random();
-            float randGreen = (float) Math.random();
+            // Update array with data for gfx component
+            if(!updateFreeHandArrays(evt))  messageArea.append("There are no inks left! You must clear the canvas!\n");
             
-            freehandColour[freehandPixelsCount] = new Color(randRed, randGreen, randBlue);
-            fxy[freehandPixelsCount][0] = evt.getX();
-            fxy[freehandPixelsCount][1] = evt.getY();
-            fxy[freehandPixelsCount][2] = freehandThickness;
-            freehandPixelsCount++;
-            
+            // Mouse has moved when dragged
             mouseMoved(evt);
+            
+            // Status
+            if (DEBUG) System.out.println("{[" + evt.getX() + ", " + evt.getY() + "], " + freehandThickness + "} has colour " + selectedColour);
+            
+            // Repaint the canvas
             canvas.repaint();
         }
     }
@@ -136,19 +144,13 @@ public class NXDraw extends JFrame
         
         public void mouseClicked(MouseEvent evt)
         {
-            // Generate some random numbers until we implement the colour selector
-            float randRed = (float) Math.random();
-            float randBlue = (float) Math.random();
-            float randGreen = (float) Math.random();
-            
             // Put the appropriate data into the arrays
-            freehandColour[freehandPixelsCount] = new Color(randRed, randGreen, randBlue);
-            fxy[freehandPixelsCount][0] = evt.getX();
-            fxy[freehandPixelsCount][1] = evt.getY();
-            fxy[freehandPixelsCount][2] = freehandThickness;
-            freehandPixelsCount++;
+            if(!updateFreeHandArrays(evt)) messageArea.append("There are no inks left! You must clear the canvas!\n");
             
-            // Repaint the canva
+            // Status
+            if ( DEBUG ) System.out.println("{[" + evt.getX() + ", " + evt.getY() + "], " + freehandThickness + "} has colour " + selectedColour);
+            
+            // Repaint the canvas
             canvas.repaint();
         }
         
@@ -177,10 +179,42 @@ public class NXDraw extends JFrame
     
     // --------------------------------------------------------
     
+    // Grid
     class GridControlChangeListener implements ChangeListener
     {
         public void stateChanged(ChangeEvent evt)
         {
+            repaint();
+        }
+    }
+    
+    // Colour changed
+    class ColorChooserActionListener implements ActionListener
+    {
+        public void actionPerformed(ActionEvent evt)
+        {
+            JColorChooser colourChooser = new JColorChooser(selectedColour);
+            Color newColor = colourChooser.showDialog(null, "Select new colour...", selectedColour);
+            selectedColour = newColor;
+        }
+    }
+    
+    // Clear the canvas
+    class ClearCanvasActionListener implements ActionListener
+    {
+        public void actionPerformed(ActionEvent evt)
+        {
+            if(DEBUG) System.out.println("Clear canvas requested");
+            // Run through the fxy array so everything = 0;
+            for(int i = 0; i < freehandPixelsCount; i++)
+            {
+                fxy[i][0] = 0;
+                fxy[i][1] = 0;
+                fxy[i][2] = 0;
+            }
+            freehandPixelsCount = 0;
+            freehandPixelsLeft = MAX_FREEHAND_PIXELS;
+            messageArea.setText("");
             repaint();
         }
     }
@@ -220,7 +254,7 @@ public class NXDraw extends JFrame
         add(menuBar, BorderLayout.PAGE_START);
         
         
-       // Control Panel
+        // Control Panel
         controlPanel = new JPanel();
         controlPanel.setBorder(new TitledBorder(new EtchedBorder(), "Control Panel"));
         controlPanel.setPreferredSize(new Dimension(CP_WIDTH, CANVAS_HEIGHT));
@@ -228,7 +262,6 @@ public class NXDraw extends JFrame
         JScrollPane controlPanelScrollPane = new JScrollPane(controlPanel);
         controlPanelScrollPane.setPreferredSize(new Dimension(CP_WIDTH + 30, CANVAS_HEIGHT));
         add(controlPanelScrollPane, BorderLayout.LINE_START);        
-
         
         // Control Panel contents
         
@@ -293,13 +326,16 @@ public class NXDraw extends JFrame
         colourPanel.setPreferredSize(new Dimension(CP_WIDTH - 20, 90));
         colourPanel.setBorder(new TitledBorder(new EtchedBorder(), "Colour"));
         colourButton = new JButton();
+        colourButton.setBackground(Color.blue);
         colourButton.setPreferredSize(new Dimension(50, 50));
+        colourButton.addActionListener(new ColorChooserActionListener());
         colourPanel.add(colourButton);
         controlPanel.add(colourPanel);
 
         // Clear button
         clearButton = new JButton("Clear Canvas");
         clearButton.setPreferredSize(new Dimension(CP_WIDTH - 20, 50));
+        clearButton.addActionListener(new ClearCanvasActionListener());
         controlPanel.add(clearButton);
 
         // Animate button
@@ -320,6 +356,33 @@ public class NXDraw extends JFrame
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setVisible(true);
+    }
+    
+    private boolean updateFreeHandArrays(MouseEvent evt)
+    {
+        int eventX = evt.getX();
+        int eventY = evt.getY();
+        try
+        {
+            freehandColour[freehandPixelsCount] = selectedColour;
+            fxy[freehandPixelsCount][0] = eventX;
+            fxy[freehandPixelsCount][1] = eventY;
+            fxy[freehandPixelsCount][2] = freehandThickness;
+            freehandPixelsCount++;
+            
+            freehandPixelsLeft--;
+            if (freehandPixelsLeft > 0)
+            {
+                messageArea.append("You have " + freehandPixelsLeft + " inks left.\n");
+            }
+            
+            return true;
+        }
+        catch (ArrayIndexOutOfBoundsException e)
+        {
+            return false;   // Return false instead of updating the messageArea here as two types of mouseEvent can call this,
+                            // and we may want to return different messages.
+        }
     }
     
     // --------------------------------------------------------
