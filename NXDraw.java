@@ -29,7 +29,7 @@ public class NXDraw extends JFrame
     // Freehand drawing
     int freehandThickness = 1;                                              // Get the value of the thickness slider
     private int freehandPixelsCount = 0;                                    // Make sure we don't go over the limit of the below arrays
-    private final int MAX_FREEHAND_PIXELS = 10;                         // Max. no of freehand squares
+    private final int MAX_FREEHAND_PIXELS = 100000;                         // Max. no of freehand squares
     private Color[] freehandColour = new Color[MAX_FREEHAND_PIXELS];        // Hold colour of each square
     private int[][] fxy = new int[MAX_FREEHAND_PIXELS][3];                  // Position and size of each square
     private Color selectedColour = new Color(0.0f, 0.0f, 0.0f);             // Initial colour. Currently black
