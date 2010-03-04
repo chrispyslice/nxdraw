@@ -37,6 +37,25 @@ public class NXDraw extends JFrame
     private Color selectedColour = new Color(0.0f, 0.0f, 0.0f);             // Initial colour. Currently black
     private int freehandPixelsLeft = MAX_FREEHAND_PIXELS;                   // How many freehand drawings can we still do?
     
+    // Drawing tools - rectangle, ovals and lines
+    private final int MAX_RECTS = 10;
+    private final int MAX_OVALS = 10;
+    private final int MAX_LINES = 10;
+    
+    private int[][] rect_xy = new int[MAX_RECTS][4];
+    private Color[] rect_color = new Color[MAX_RECTS];
+    private int rect_count = 0;
+    
+    private int[][] oval_xy = new int[MAX_OVALS][4];
+    private Color[] oval_color = new Color[MAX_OVALS];
+    private int oval_count = 0;
+    
+    private int[][] line_xy = new int[MAX_LINES][4];
+    private Color[] line_color = new Color[MAX_LINES];
+    private int line_count = 0;
+    
+    private char curr_dtool_mode = 'l';
+    
     // Instance declarations
     private Canvas canvas;
     private Cursor canvasCursor;
@@ -55,6 +74,7 @@ public class NXDraw extends JFrame
     {
         public void paintComponent(Graphics gfx)
         {
+            ((Graphics2D)gfx).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); 
             super.paintComponent(gfx);
             
             int canvasHeight = getHeight();
@@ -98,6 +118,28 @@ public class NXDraw extends JFrame
                 int offsetY = fxy[i][1] - (width_height / 2);
                 gfx.fillOval(offsetX, offsetY, width_height, width_height);
             }
+   
+            // Drawing tools
+            // First, rectanges
+            for( int i = 0; i <= rect_count && rect_count < MAX_RECTS; i++ )
+            {
+                gfx.setColor(rect_color[i]);
+                gfx.drawRect(Math.min(rect_xy[i][0],rect_xy[i][2]), Math.min(rect_xy[i][1], rect_xy[i][3]), Math.abs(rect_xy[i][0] - rect_xy[i][2]), Math.abs(rect_xy[i][1] - rect_xy[i][3]));
+            }
+            
+            // Ovals
+            for( int i = 0; i <= oval_count && oval_count < MAX_OVALS; i++ )
+            {
+                gfx.setColor(oval_color[i]);
+                gfx.drawOval(Math.min(oval_xy[i][0],oval_xy[i][2]), Math.min(oval_xy[i][1], oval_xy[i][3]), Math.abs(oval_xy[i][0] - oval_xy[i][2]), Math.abs(oval_xy[i][1] - oval_xy[i][3]));
+            }
+            
+            // Lines
+            for( int i = 0; i <= line_count && line_count < MAX_LINES; i++ )
+            {
+                gfx.setColor(line_color[i]);
+                gfx.drawLine(line_xy[i][0], line_xy[i][1], line_xy[i][2], line_xy[i][3]);
+            }
         }
     }
     
@@ -116,16 +158,40 @@ public class NXDraw extends JFrame
         public void mouseDragged(MouseEvent evt)
         {
             // Update array with data for gfx component
-            if(!updateFreeHandArrays(evt))  messageArea.append("There are no inks left! You must clear the canvas!\n");
-            
+            if( curr_dtool_mode == 'f' )
+            {
+                if(!updateFreeHandArrays(evt)) messageArea.append("There are no inks left! You must clear the canvas!\n");
+            }
+
             // Mouse has moved when dragged
             mouseMoved(evt);
             
             // Status
             if (DEBUG) System.out.println("{[" + evt.getX() + ", " + evt.getY() + "], " + freehandThickness + "} has colour " + selectedColour);
+         
+           
+            switch( curr_dtool_mode )
+            {
+               case 'l':
+                    line_xy[line_count][2] = evt.getX();
+                    line_xy[line_count][3] = evt.getY();
+               break;
+               
+               case 'r':
+                    rect_xy[rect_count][2] = evt.getX();
+                    rect_xy[rect_count][3] = evt.getY();
+               break;
+               
+               case 'o':
+                    oval_xy[oval_count][2] = evt.getX();
+                    oval_xy[oval_count][3] = evt.getY();
+               break;
+            }
             
             // Repaint the canvas
             canvas.repaint();
+            
+            
         }
     }
     
@@ -136,18 +202,54 @@ public class NXDraw extends JFrame
     {
         public void mousePressed(MouseEvent evt)
         {
-            ;
+            switch( curr_dtool_mode )
+            {
+                case 'l':
+                    line_xy[line_count][0] = line_xy[line_count][2] = evt.getX();
+                    line_xy[line_count][1] = line_xy[line_count][3] = evt.getX();
+                break;
+                
+                case 'r':
+                    rect_xy[rect_count][0] = rect_xy[rect_count][2] = evt.getX();
+                    rect_xy[rect_count][1] = rect_xy[rect_count][3] = evt.getY();
+                    rect_color[rect_count] = selectedColour;
+                break;
+                
+                case 'o':
+                    oval_xy[oval_count][0] = oval_xy[oval_count][2] = evt.getX();
+                    oval_xy[oval_count][1] = oval_xy[oval_count][3] = evt.getY();
+                    oval_color[oval_count] = selectedColour;
+                break;
+            }
         }
         
         public void mouseReleased(MouseEvent evt)
         {
-            ;
+            switch( curr_dtool_mode )
+            {
+                case 'l':
+                    line_count++;
+                break;
+                
+
+                case 'r':
+                   rect_count++; 
+                break;
+
+                
+                case 'o':
+                    oval_count++;
+                break;
+            }  
         }
         
         public void mouseClicked(MouseEvent evt)
         {
             // Put the appropriate data into the arrays
-            if(!updateFreeHandArrays(evt)) messageArea.append("There are no inks left! You must clear the canvas!\n");
+            if( curr_dtool_mode == 'f' )
+            {
+                if(!updateFreeHandArrays(evt)) messageArea.append("There are no inks left! You must clear the canvas!\n");
+            }
             
             // Status
             if ( DEBUG ) System.out.println("{[" + evt.getX() + ", " + evt.getY() + "], " + freehandThickness + "} has colour " + selectedColour);
@@ -208,16 +310,51 @@ public class NXDraw extends JFrame
         {
             if(DEBUG) System.out.println("Clear canvas requested");
             // Run through the fxy array so everything = 0;
-            for(int i = 0; i < freehandPixelsCount; i++)
-            {
-                fxy[i][0] = 0;
-                fxy[i][1] = 0;
-                fxy[i][2] = 0;
-            }
+            fxy = new int[MAX_FREEHAND_PIXELS][3];
             freehandPixelsCount = 0;
             freehandPixelsLeft = MAX_FREEHAND_PIXELS;
+            
+            // Lines
+            line_xy = new int[MAX_LINES][4];
+            line_count = 0;
+            
+            // Rectangles
+           rect_xy = new int[MAX_RECTS][4];
+           rect_count = 0;
+            
+            // Ovals
+            oval_xy = new int[MAX_OVALS][4];
+            oval_count = 0;
+            
             messageArea.setText("");
             repaint();
+        }
+    }
+    
+    // Drawing tool selecter
+    class DrawingToolActionListener implements ActionListener
+    {
+        public void actionPerformed(ActionEvent evt)
+        {
+            String currentMode = evt.getActionCommand();
+            if( currentMode == "Line" )
+            {
+                curr_dtool_mode = 'l';
+            }
+            else if ( currentMode == "Rectangle" )
+            {
+                curr_dtool_mode = 'r';
+            }
+            else if ( currentMode == "Oval" )
+            {
+                curr_dtool_mode = 'o';
+            }
+            else if ( currentMode == "Freehand" )
+            {
+                curr_dtool_mode = 'f';
+            }
+            
+            System.out.println("Current mode: " + curr_dtool_mode);
         }
     }
     
@@ -291,6 +428,10 @@ public class NXDraw extends JFrame
         drawingToolsButtonGroup.add(ovalRadioButton);
         drawingToolsPanel.add(ovalRadioButton);
         freehandRadioButton = new JRadioButton("Freehand");
+        lineRadioButton.addActionListener(new DrawingToolActionListener());
+        rectangleRadioButton.addActionListener(new DrawingToolActionListener());
+        ovalRadioButton.addActionListener(new DrawingToolActionListener());
+        freehandRadioButton.addActionListener(new DrawingToolActionListener());
         drawingToolsButtonGroup.add(freehandRadioButton);
         drawingToolsPanel.add(freehandRadioButton);
         controlPanel.add(drawingToolsPanel);
@@ -353,7 +494,7 @@ public class NXDraw extends JFrame
         textAreaScrollPane.setBorder(new TitledBorder(new EtchedBorder(), "Message Area"));
         textAreaScrollPane.setPreferredSize(new Dimension(CP_WIDTH + CANVAS_WIDTH, MA_HEIGHT));
         add(textAreaScrollPane, BorderLayout.PAGE_END);
-        
+
         // Misc
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
