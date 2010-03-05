@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.JOptionPane;
+import javax.swing.Timer;
 import java.io.*;
 
 /**
@@ -78,7 +79,11 @@ public class NXDraw extends JFrame {
 		{
 			((Graphics2D)gfx).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); 
 			super.paintComponent(gfx);
-			
+			draw(gfx);
+		}
+		
+		public void draw(Graphics gfx)
+		{
 			int canvasHeight = getHeight();
 			int canvasWidth = getWidth();
 
@@ -208,7 +213,8 @@ public class NXDraw extends JFrame {
 			{
 				case 'l':
 					line_xy[line_count][0] = line_xy[line_count][2] = evt.getX();
-					line_xy[line_count][1] = line_xy[line_count][3] = evt.getX();
+					line_xy[line_count][1] = line_xy[line_count][3] = evt.getY();
+					line_color[line_count] = selected_color;
 				break;
 				
 				case 'r':
@@ -324,6 +330,28 @@ public class NXDraw extends JFrame {
 		}
 	}
 	
+	class AnimateButtonActionListener implements ActionListener
+	{
+		public void actionPerformed(ActionEvent evt)
+		{
+			AnimatorClass aniClass = new AnimatorClass();
+			Timer animationTimer = new Timer(10, aniClass);
+			animationTimer.start();
+		}
+	}
+	
+	class AnimatorClass implements ActionListener
+	{
+		public void actionPerformed(ActionEvent evt)
+		{
+			//oval_xy[0][0]--;
+			oval_xy[0][1]++;
+			//oval_xy[0][2]--;
+			oval_xy[0][3]++;
+			repaint();
+		}
+	}
+	
 	// Drawing tool selector
 	class DrawingToolActionListener implements ActionListener
 	{
@@ -346,8 +374,6 @@ public class NXDraw extends JFrame {
 			{
 				curr_dtool_mode = 'f';
 			}
-			
-			System.out.println("Current mode: " + curr_dtool_mode);
 		}
 	}
 	
@@ -355,7 +381,7 @@ public class NXDraw extends JFrame {
 	{
 		public void actionPerformed(ActionEvent evt)
 		{
-			int returnVal = fileChooser.showSaveDialog(NDraw.this);
+			int returnVal = fileChooser.showSaveDialog(NXDraw.this);
 			if (returnVal == JFileChooser.APPROVE_OPTION)
 			{
 	            file = fileChooser.getSelectedFile();
@@ -413,7 +439,7 @@ public class NXDraw extends JFrame {
 	{
 		public void actionPerformed(ActionEvent evt)
 		{
-			int returnVal = fileChooser.showOpenDialog(NDraw.this);
+			int returnVal = fileChooser.showOpenDialog(NXDraw.this);
 			if (returnVal == JFileChooser.APPROVE_OPTION)
 			{
 	            file = fileChooser.getSelectedFile();
@@ -488,7 +514,7 @@ public class NXDraw extends JFrame {
 	
 	// --------------------------------------------------------
 	
-	public NDraw()
+	public NXDraw()
 	{   
 		setLayout(new BorderLayout());
 		setTitle(WINDOW_TITLE);
@@ -615,6 +641,7 @@ public class NXDraw extends JFrame {
 		// Animate button
 		animateButton = new JButton("Animate");
 		animateButton.setPreferredSize(new Dimension(CP_WIDTH - 20, 50));
+		animateButton.addActionListener(new AnimateButtonActionListener());
 		controlPanel.add(animateButton);
 
 		// Message area
