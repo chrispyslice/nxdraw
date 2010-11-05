@@ -3,8 +3,11 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
+import javax.swing.JColorChooser;
 import javax.swing.JOptionPane;
 import javax.swing.Timer;
+import javax.swing.UnsupportedLookAndFeelException;
+
 import java.io.*;
 
 /**
@@ -15,7 +18,9 @@ import java.io.*;
  */
 
 public class NXDraw extends JFrame {
-    // Window
+    private static final boolean NIMBUS = true;
+	private static final long serialVersionUID = 1L;
+	// Window
     private final int CANVAS_HEIGHT = 800;								// Canvas height
     private final int CANVAS_WIDTH = 640;								// Canvas width
     private final int CP_WIDTH = 200;									// Control panel width
@@ -65,7 +70,6 @@ public class NXDraw extends JFrame {
 	private JCheckBox fineCheckBox, coarseCheckBox;
 	private JButton colourButton, clearButton, animateButton;
 	private JTextArea messageArea;
-	private JOptionPane about_menu;
 	private ObjectOutputStream objectOut;
 	private ObjectInputStream objectIn;
 	private JFileChooser fileChooser = new JFileChooser();
@@ -75,6 +79,11 @@ public class NXDraw extends JFrame {
 	
 	class Canvas extends JPanel
 	{
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
 		public void paintComponent(Graphics gfx)
 		{
 			((Graphics2D)gfx).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); 
@@ -256,6 +265,7 @@ public class NXDraw extends JFrame {
 			canvas.repaint();
 		}
 		
+      @Override
 		public void mouseEntered(MouseEvent evt)
 		{
 			;
@@ -295,8 +305,7 @@ public class NXDraw extends JFrame {
 	{
 		public void actionPerformed(ActionEvent evt)
 		{
-			JColorChooser colourChooser = new JColorChooser(selected_color);
-			Color newColor = colourChooser.showDialog(null, "Select new colour...", selected_color);
+			Color newColor = JColorChooser.showDialog(null, "Select new colour...", selected_color);
 			selected_color = newColor;
 		}
 	}
@@ -403,12 +412,10 @@ public class NXDraw extends JFrame {
 				}
 	            catch (FileNotFoundException e)
 	            {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 	            catch (IOException e)
 	            {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 	            finally
@@ -463,15 +470,12 @@ public class NXDraw extends JFrame {
 				}
 	            catch (FileNotFoundException e)
 	            {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 	            catch (IOException e)
 	            {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				finally
@@ -688,9 +692,10 @@ public class NXDraw extends JFrame {
 	
 	// --------------------------------------------------------
 	
-	public static void main(String args[])
+	public static void main(String args[]) throws ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException
 	{
-		NXDraw window = new NXDraw();
+		if(NIMBUS) UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+		new NXDraw();
 	}
 	
 }
